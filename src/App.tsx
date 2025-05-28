@@ -17,7 +17,7 @@ function App() {
         <footer className="bg-gray-800 text-white p-4 mt-10">
           <div className="container mx-auto">
             <p className="text-center text-sm">
-              &copy; 2025 Seattle Demographics Dashboard
+              &copy; 2025 Inequality Forecast Dashboard | Data is simulated for demonstration purposes
             </p>
           </div>
         </footer>
@@ -25,5 +25,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;
