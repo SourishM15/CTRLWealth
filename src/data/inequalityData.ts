@@ -1,23 +1,26 @@
 import { fetchRegions } from '../services/dataService';
+import { RegionData, InequalityMetric } from '../types';
 
-// Initialize regions data
-let regions = [];
-let usMetrics = [];
-let washingtonMetrics = [];
+let regions: RegionData[] = [];
+let usMetrics: InequalityMetric[] = [];
+let washingtonMetrics: InequalityMetric[] = [];
 
 // Load data
-const loadData = async () => {
+export const loadData = async () => {
   try {
     regions = await fetchRegions();
-    usMetrics = regions.find(r => r.id === 'us')?.metrics || [];
-    washingtonMetrics = regions.find(r => r.id === 'washington')?.metrics || [];
+    const usRegion = regions.find(r => r.id === 'us');
+    const waRegion = regions.find(r => r.id === 'washington');
+    
+    if (usRegion) usMetrics = usRegion.metrics;
+    if (waRegion) washingtonMetrics = waRegion.metrics;
+    
+    return { regions, usMetrics, washingtonMetrics };
   } catch (error) {
     console.error('Error loading data:', error);
+    throw error;
   }
 };
-
-// Load data immediately
-loadData();
 
 // Helper functions to get data
 export const getMetricById = (regionId: string, metricId: string) => {
@@ -31,5 +34,5 @@ export const getRegionById = (regionId: string) => {
   return regions.find(r => r.id === regionId);
 };
 
-// Export data and functions
+// Export data
 export { regions, usMetrics, washingtonMetrics };
