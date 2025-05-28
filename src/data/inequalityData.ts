@@ -1,7 +1,23 @@
 import { fetchRegions } from '../services/dataService';
 
-// Export regions data
-export const regions = await fetchRegions();
+// Initialize regions data
+let regions = [];
+let usMetrics = [];
+let washingtonMetrics = [];
+
+// Load data
+const loadData = async () => {
+  try {
+    regions = await fetchRegions();
+    usMetrics = regions.find(r => r.id === 'us')?.metrics || [];
+    washingtonMetrics = regions.find(r => r.id === 'washington')?.metrics || [];
+  } catch (error) {
+    console.error('Error loading data:', error);
+  }
+};
+
+// Load data immediately
+loadData();
 
 // Helper functions to get data
 export const getMetricById = (regionId: string, metricId: string) => {
@@ -15,6 +31,5 @@ export const getRegionById = (regionId: string) => {
   return regions.find(r => r.id === regionId);
 };
 
-// Export metrics for easy access
-export const usMetrics = regions.find(r => r.id === 'us')?.metrics || [];
-export const washingtonMetrics = regions.find(r => r.id === 'washington')?.metrics || [];
+// Export data and functions
+export { regions, usMetrics, washingtonMetrics };
