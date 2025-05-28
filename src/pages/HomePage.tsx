@@ -35,7 +35,7 @@ const HomePage: React.FC = () => {
 
     const path = d3.geoPath().projection(projection);
 
-    // Create background rectangle for water
+    // Draw background
     svg.append("rect")
       .attr("width", width)
       .attr("height", height)
@@ -90,25 +90,21 @@ const HomePage: React.FC = () => {
 
     // Add major highways
     const highways = [
-      { id: "I-5", path: "M -122.3321 47.5500 L -122.3321 47.6500", label: "I-5" },
-      { id: "I-90", path: "M -122.4000 47.6062 L -122.2800 47.6062", label: "I-90" }
+      { id: "I-5", coordinates: [[-122.3321, 47.5500], [-122.3321, 47.6500]] },
+      { id: "I-90", coordinates: [[-122.4000, 47.6062], [-122.2800, 47.6062]] }
     ];
 
-    svg.selectAll(".highway")
-      .data(highways)
-      .enter()
-      .append("path")
-      .attr("class", "highway")
-      .attr("d", d => {
-        const points = d.path.split(" L ").map(coord => {
-          const [lon, lat] = coord.split(" ").map(Number);
-          return projection([lon, lat]);
-        });
-        return `M ${points[0]} L ${points[1]}`;
-      })
-      .attr("stroke", "#DC2626")
-      .attr("stroke-width", 3)
-      .attr("fill", "none");
+    highways.forEach(highway => {
+      svg.append("path")
+        .datum({
+          type: "LineString",
+          coordinates: highway.coordinates
+        })
+        .attr("d", path)
+        .attr("stroke", "#DC2626")
+        .attr("stroke-width", 3)
+        .attr("fill", "none");
+    });
 
     return () => {
       tooltip.remove();
