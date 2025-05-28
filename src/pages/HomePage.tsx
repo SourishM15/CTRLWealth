@@ -1,106 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3';
-import { feature } from 'topojson-client';
+import React, { useEffect, useState } from 'react';
 import ChatInterface from '../components/ChatInterface';
-import { washingtonMetrics } from '../data/inequalityData';
+import SeattleMap from '../components/SeattleMap';
+import { fetchSeattleNeighborhoods, SeattleNeighborhood } from '../services/seattleService';
 
 const HomePage: React.FC = () => {
-  const mapRef = useRef<SVGSVGElement>(null);
+  const [neighborhoods, setNeighborhoods] = useState<SeattleNeighborhood[]>([]);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<SeattleNeighborhood | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        await washingtonMetrics;
+        const data = await fetchSeattleNeighborhoods();
+        setNeighborhoods(data);
         setIsLoading(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
+      } catch (err) {
+        console.error('Error loading neighborhoods:', err);
+        setError('Failed to load neighborhood data');
+        setIsLoading(false);
       }
     };
 
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (!mapRef.current || isLoading) return;
-
-    const width = 960;
-    const height = 500;
-
-    // Clear previous content
-    d3.select(mapRef.current).selectAll("*").remove();
-
-    const svg = d3.select(mapRef.current)
-      .attr("viewBox", [0, 0, width, height])
-      .attr("width", "100%")
-      .attr("height", "100%");
-
-    // Custom projection centered on Washington state
-    const projection = d3.geoAlbers()
-      .center([-120.7, 47.4])
-      .rotate([0, 0])
-      .scale(4000)
-      .translate([width / 2, height / 2]);
-
-    const path = d3.geoPath().projection(projection);
-
-    // Load US map data
-    Promise.all([
-      d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
-    ]).then(([us]) => {
-      if (!us) return;
-
-      const states = feature(us, us.objects.states);
-      const washington = states.features.find(d => d.properties?.name === 'Washington');
-      
-      if (!washington) return;
-
-      // Create tooltip
-      const tooltip = d3.select("body").append("div")
-        .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
-        .style("pointer-events", "none");
-
-      // Draw Washington state
-      svg.append("g")
-        .append("path")
-        .datum(washington)
-        .attr("fill", "#10B981")
-        .attr("d", path)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 1)
-        .attr("opacity", 0.8)
-        .on("mouseover", (event) => {
-          d3.select(event.currentTarget)
-            .attr("opacity", 1)
-            .attr("stroke-width", 2);
-          
-          tooltip
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px")
-            .html("Washington")
-            .classed("hidden", false);
-        })
-        .on("mouseout", (event) => {
-          d3.select(event.currentTarget)
-            .attr("opacity", 0.8)
-            .attr("stroke-width", 1);
-          
-          tooltip.classed("hidden", true);
-        });
-    });
-
-    return () => {
-      // Cleanup tooltip
-      d3.select("body").selectAll("div.tooltip").remove();
-    };
-  }, [isLoading]);
-
-  const getQuickStats = () => {
-    return {
-      gini: washingtonMetrics.find(m => m.id === 'gini')?.currentValue.toFixed(2),
-      poverty: washingtonMetrics.find(m => m.id === 'poverty-rate')?.currentValue.toFixed(1),
-      wealth: washingtonMetrics.find(m => m.id === 'wealth-top1')?.currentValue.toFixed(1)
-    };
+  const handleNeighborhoodSelect = (neighborhood: SeattleNeighborhood) => {
+    setSelectedNeighborhood(neighborhood);
   };
 
   if (isLoading) {
@@ -108,13 +34,28 @@ const HomePage: React.FC = () => {
       <div className="container mx-auto px-4 py-6 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading data...</p>
+          <p className="text-gray-600">Loading Seattle neighborhood data...</p>
         </div>
       </div>
     );
   }
 
-  const stats = getQuickStats();
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-6 flex items-center justify-center min-h-[60vh]">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+          <p className="text-gray-700">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="container mx-auto px-4 py-6">
@@ -126,25 +67,36 @@ const HomePage: React.FC = () => {
         <div className="lg:col-span-9">
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <h2 className="text-2xl font-bold mb-4">
-              Washington State Inequality Overview
+              Seattle Neighborhoods Demographics
             </h2>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-indigo-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-indigo-800">Gini Coefficient</h3>
-                <p className="text-2xl font-bold text-indigo-600">{stats.gini}</p>
+            
+            {selectedNeighborhood && selectedNeighborhood.demographics && (
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-indigo-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-indigo-800">Children Under 18</h3>
+                  <p className="text-2xl font-bold text-indigo-600">
+                    {selectedNeighborhood.demographics.children_under_18.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-emerald-800">Working Age Adults</h3>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {selectedNeighborhood.demographics.working_age_adults_18_64.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-amber-800">Median Age</h3>
+                  <p className="text-2xl font-bold text-amber-600">
+                    {selectedNeighborhood.demographics.median_age_total}
+                  </p>
+                </div>
               </div>
-              <div className="bg-emerald-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-emerald-800">Poverty Rate</h3>
-                <p className="text-2xl font-bold text-emerald-600">{stats.poverty}%</p>
-              </div>
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-amber-800">Top 1% Wealth Share</h3>
-                <p className="text-2xl font-bold text-amber-600">{stats.wealth}%</p>
-              </div>
-            </div>
-            <div className="w-full h-[500px] rounded-lg overflow-hidden">
-              <svg ref={mapRef} className="w-full h-full" />
-            </div>
+            )}
+            
+            <SeattleMap 
+              neighborhoods={neighborhoods}
+              onNeighborhoodSelect={handleNeighborhoodSelect}
+            />
           </div>
         </div>
       </div>
