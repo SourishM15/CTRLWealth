@@ -3,6 +3,27 @@ import * as d3 from 'd3';
 import ChatInterface from '../components/ChatInterface';
 import { usMetrics, washingtonMetrics } from '../data/inequalityData';
 
+// Washington state coordinates (simplified for example)
+const washingtonCoordinates = {
+  type: "Feature",
+  properties: { name: "Washington" },
+  geometry: {
+    type: "MultiPolygon",
+    coordinates: [[[[
+      [-124.7844079, 48.3995],
+      [-123.1697, 48.4045],
+      [-122.7457, 48.0995],
+      [-122.7579, 47.2620],
+      [-122.3237, 47.3593],
+      [-122.3293, 46.8382],
+      [-122.9187, 46.8382],
+      [-123.1158, 46.1846],
+      [-124.0432, 46.2846],
+      [-124.7844079, 48.3995]
+    ]]]]
+  }
+};
+
 const HomePage: React.FC = () => {
   const mapRef = useRef<SVGSVGElement>(null);
   const [selectedState, setSelectedState] = useState<'US' | 'WA'>('US');
@@ -36,14 +57,7 @@ const HomePage: React.FC = () => {
 
     // Draw Washington state
     svg.selectAll("path")
-      .data([{
-        type: "Feature",
-        properties: { name: "Washington" },
-        geometry: {
-          type: "MultiPolygon",
-          coordinates: ${JSON.stringify(JSON.parse(coordinates).features[0].geometry.coordinates)}
-        }
-      }])
+      .data([washingtonCoordinates])
       .enter()
       .append("path")
       .attr("d", path)
