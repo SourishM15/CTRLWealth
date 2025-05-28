@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { feature } from 'topojson-client';
 import ChatInterface from '../components/ChatInterface';
 import { seattleNeighborhoods } from '../data/seattleData';
 import { SeattleNeighborhood } from '../types';
@@ -20,7 +21,8 @@ const HomePage: React.FC = () => {
     const svg = d3.select(mapRef.current)
       .attr("viewBox", [0, 0, width, height])
       .attr("width", "100%")
-      .attr("height", "100%");
+      .attr("height", "100%")
+      .style("background", "#f3f4f6");
 
     // Create tooltip
     const tooltip = d3.select("body").append("div")
@@ -29,22 +31,32 @@ const HomePage: React.FC = () => {
 
     // For now, create placeholder rectangles for neighborhoods
     const gridSize = Math.ceil(Math.sqrt(seattleNeighborhoods.length));
-    const rectWidth = width / gridSize;
-    const rectHeight = height / gridSize;
+    const rectWidth = (width - 100) / gridSize;
+    const rectHeight = (height - 100) / gridSize;
+    const startX = 50; // Add padding
+    const startY = 50; // Add padding
 
-    svg.selectAll("rect")
+    // Create a group for the neighborhoods
+    const neighborhoodsGroup = svg.append("g")
+      .attr("transform", `translate(${startX},${startY})`);
+
+    // Add neighborhoods
+    neighborhoodsGroup.selectAll("rect")
       .data(seattleNeighborhoods)
       .join("rect")
       .attr("x", (d, i) => (i % gridSize) * rectWidth)
       .attr("y", (d, i) => Math.floor(i / gridSize) * rectHeight)
-      .attr("width", rectWidth - 2)
-      .attr("height", rectHeight - 2)
+      .attr("width", rectWidth - 10)
+      .attr("height", rectHeight - 10)
       .attr("fill", d => d.id === selectedNeighborhood?.id ? "#10B981" : "#4F46E5")
       .attr("opacity", 0.8)
-      .attr("rx", 4)
+      .attr("rx", 8)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 2)
       .on("mouseover", (event, d) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 1);
+          .attr("opacity", 1)
+          .attr("stroke-width", 3);
         
         tooltip
           .style("left", (event.pageX + 10) + "px")
@@ -54,7 +66,8 @@ const HomePage: React.FC = () => {
       })
       .on("mouseout", (event) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 0.8);
+          .attr("opacity", 0.8)
+          .attr("stroke-width", 2);
         
         tooltip.classed("hidden", true);
       })
@@ -63,16 +76,27 @@ const HomePage: React.FC = () => {
       });
 
     // Add neighborhood labels
-    svg.selectAll("text")
+    neighborhoodsGroup.selectAll("text")
       .data(seattleNeighborhoods)
       .join("text")
       .attr("x", (d, i) => (i % gridSize) * rectWidth + rectWidth / 2)
       .attr("y", (d, i) => Math.floor(i / gridSize) * rectHeight + rectHeight / 2)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
-      .attr("font-size", "12px")
+      .attr("font-size", "14px")
       .attr("fill", "white")
+      .attr("font-weight", "bold")
       .text(d => d.name);
+
+    // Add title
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", 25)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "20px")
+      .attr("font-weight", "bold")
+      .attr("fill", "#1F2937")
+      .text("Seattle Neighborhoods");
 
     return () => {
       tooltip.remove();
