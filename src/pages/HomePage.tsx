@@ -35,19 +35,25 @@ const HomePage: React.FC = () => {
 
     const path = d3.geoPath().projection(projection);
 
+    // Create background rectangle for water
+    svg.append("rect")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("fill", "#B8D5F0"); // Light blue for water
+
     // Draw Seattle neighborhoods
     svg.selectAll("path")
       .data(seattleGeoJSON.features)
       .enter()
       .append("path")
       .attr("d", path)
-      .attr("fill", d => d.properties.id === selectedNeighborhood ? "#10B981" : "#4F46E5")
-      .attr("stroke", "white")
+      .attr("fill", d => d.properties.id === selectedNeighborhood ? "#10B981" : "#E5E7EB")
+      .attr("stroke", "#4B5563")
       .attr("stroke-width", 1)
-      .attr("opacity", 0.6)
+      .attr("opacity", 0.9)
       .on("mouseover", (event, d) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 0.8)
+          .attr("opacity", 1)
           .attr("stroke-width", 2);
 
         tooltip
@@ -58,7 +64,7 @@ const HomePage: React.FC = () => {
       })
       .on("mouseout", (event) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 0.6)
+          .attr("opacity", 0.9)
           .attr("stroke-width", 1);
 
         tooltip.classed("hidden", true);
@@ -78,8 +84,31 @@ const HomePage: React.FC = () => {
       })
       .attr("text-anchor", "middle")
       .attr("font-size", "12px")
-      .attr("fill", "#1f2937")
+      .attr("fill", "#1F2937")
+      .attr("font-weight", "500")
       .text(d => d.properties.name);
+
+    // Add major highways
+    const highways = [
+      { id: "I-5", path: "M -122.3321 47.5500 L -122.3321 47.6500", label: "I-5" },
+      { id: "I-90", path: "M -122.4000 47.6062 L -122.2800 47.6062", label: "I-90" }
+    ];
+
+    svg.selectAll(".highway")
+      .data(highways)
+      .enter()
+      .append("path")
+      .attr("class", "highway")
+      .attr("d", d => {
+        const points = d.path.split(" L ").map(coord => {
+          const [lon, lat] = coord.split(" ").map(Number);
+          return projection([lon, lat]);
+        });
+        return `M ${points[0]} L ${points[1]}`;
+      })
+      .attr("stroke", "#DC2626")
+      .attr("stroke-width", 3)
+      .attr("fill", "none");
 
     return () => {
       tooltip.remove();
@@ -88,7 +117,7 @@ const HomePage: React.FC = () => {
 
   const selectedData = selectedNeighborhood 
     ? seattleNeighborhoods.find(n => n.id === selectedNeighborhood)
-    : seattleNeighborhoods[0];
+    : null;
 
   return (
     <main className="container mx-auto px-4 py-6">
@@ -107,21 +136,23 @@ const HomePage: React.FC = () => {
               <div className="bg-indigo-50 p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-indigo-800">Total Population</h3>
                 <p className="text-2xl font-bold text-indigo-600">
-                  {(selectedData.demographics.children_under_18 + 
+                  {selectedData ? (
+                    (selectedData.demographics.children_under_18 + 
                     selectedData.demographics.working_age_adults_18_64 + 
-                    selectedData.demographics.older_adults_65_over).toLocaleString()}
+                    selectedData.demographics.older_adults_65_over).toLocaleString()
+                  ) : "Select a neighborhood"}
                 </p>
               </div>
               <div className="bg-emerald-50 p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-emerald-800">Children Under 18</h3>
                 <p className="text-2xl font-bold text-emerald-600">
-                  {selectedData.demographics.children_under_18.toLocaleString()}
+                  {selectedData ? selectedData.demographics.children_under_18.toLocaleString() : "-"}
                 </p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-amber-800">Median Age</h3>
                 <p className="text-2xl font-bold text-amber-600">
-                  {selectedData.demographics.median_age_total}
+                  {selectedData ? selectedData.demographics.median_age_total : "-"}
                 </p>
               </div>
             </div>
