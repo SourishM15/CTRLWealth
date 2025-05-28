@@ -31,7 +31,7 @@ const HomePage: React.FC = () => {
     // Create a projection centered on Seattle
     const projection = d3.geoMercator()
       .center([-122.3321, 47.6062])
-      .scale(150000)
+      .scale(200000)
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
