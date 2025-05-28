@@ -211,8 +211,10 @@ const HomePage: React.FC = () => {
       .attr("width", "100%")
       .attr("height", "100%");
 
-    const projection = d3.geoAlbersUsa()
-      .scale(1000)
+    // Create a projection specifically for Washington state
+    const projection = d3.geoMercator()
+      .center([-120.7401, 47.7511]) // Center on Washington state
+      .scale(4500)
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
@@ -230,7 +232,7 @@ const HomePage: React.FC = () => {
       .attr("d", path)
       .attr("fill", "#4F46E5")
       .attr("stroke", "#fff")
-      .attr("stroke-width", 0.5)
+      .attr("stroke-width", 1)
       .attr("opacity", 0.8)
       .on("mouseover", (event, d) => {
         d3.select(event.currentTarget)
