@@ -29,9 +29,9 @@ const HomePage: React.FC = () => {
 
     // Create a projection centered on Washington state
     const projection = d3.geoAlbers()
-      .center([-120.7401, 47.7511])
+      .center([-120.7401, 47.7511]) // Center coordinates for Washington
       .rotate([0, 0])
-      .scale(4000)
+      .scale(5000) // Increased scale to zoom in more
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
@@ -94,18 +94,35 @@ const HomePage: React.FC = () => {
             }
           });
 
-        // Add state labels
-        svg.append("g")
-          .selectAll("text")
-          .data(states.features)
+        // Add major cities in Washington
+        const cities = [
+          { name: "Seattle", coordinates: [-122.3321, 47.6062] },
+          { name: "Spokane", coordinates: [-117.4260, 47.6588] },
+          { name: "Tacoma", coordinates: [-122.4400, 47.2529] },
+          { name: "Vancouver", coordinates: [-122.6615, 45.6387] },
+          { name: "Bellevue", coordinates: [-122.2006, 47.6101] }
+        ];
+
+        // Add city markers
+        svg.selectAll("circle")
+          .data(cities)
+          .join("circle")
+          .attr("transform", d => `translate(${projection(d.coordinates)})`)
+          .attr("r", 4)
+          .attr("fill", "#ef4444")
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 1);
+
+        // Add city labels
+        svg.selectAll("text")
+          .data(cities)
           .join("text")
-          .filter(d => d.properties?.name === 'Washington')
-          .attr("transform", d => `translate(${path.centroid(d)})`)
-          .attr("text-anchor", "middle")
-          .attr("font-size", "14px")
-          .attr("fill", "#fff")
-          .attr("font-weight", "bold")
-          .text(d => d.properties?.name);
+          .attr("transform", d => `translate(${projection(d.coordinates)})`)
+          .attr("dx", "8")
+          .attr("dy", "4")
+          .attr("font-size", "12px")
+          .attr("fill", "#1f2937")
+          .text(d => d.name);
       })
       .catch(error => {
         console.error('Error loading map data:', error);
