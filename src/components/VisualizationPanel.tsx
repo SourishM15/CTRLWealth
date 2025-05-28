@@ -1,8 +1,8 @@
 import React from 'react';
 import { FilterState, InequalityMetric } from '../types';
 import { getMetricById, getRegionById } from '../data/inequalityData';
-import LineChart from './charts/LineChart.tsx';
-import BarChart from './charts/BarChart.tsx';
+import LineChart from './charts/LineChart';
+import BarChart from './charts/BarChart';
 import Analysis from './Analysis';
 
 interface VisualizationPanelProps {
