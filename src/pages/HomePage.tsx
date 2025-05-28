@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { feature } from 'topojson-client';
 import ChatInterface from '../components/ChatInterface';
-import { usMetrics, washingtonMetrics } from '../data/inequalityData';
+import { seattleNeighborhoods } from '../data/seattleData';
 
 const HomePage: React.FC = () => {
   const mapRef = useRef<SVGSVGElement>(null);
-  const [selectedState, setSelectedState] = useState<'US' | 'WA'>('WA');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -27,118 +26,107 @@ const HomePage: React.FC = () => {
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
       .style("pointer-events", "none");
 
-    // Create a projection centered on Washington state
-    const projection = d3.geoAlbers()
-      .center([-120.7401, 47.7511]) // Center coordinates for Washington
-      .rotate([0, 0])
-      .scale(5000) // Increased scale to zoom in more
+    // Seattle boundary coordinates
+    const seattleBoundary = {
+      "type": "Feature",
+      "properties": {},
+      "geometry": {
+        "coordinates": [
+          [
+            [-122.50430755793437, 47.70540114711574],
+            [-122.50558917574187, 47.6258565022606],
+            [-122.50291266215622, 47.57810015565403],
+            [-122.5035985106469, 47.48380675619535],
+            [-122.21418815398167, 47.48382100110544],
+            [-122.22442872411892, 47.70476795186832],
+            [-122.50430755793437, 47.70540114711574]
+          ]
+        ],
+        "type": "Polygon"
+      }
+    };
+
+    // Define neighborhood coordinates
+    const neighborhoods = [
+      { name: "Ballard", coords: [-122.3866, 47.6792] },
+      { name: "Fremont", coords: [-122.3499, 47.6615] },
+      { name: "Queen Anne", coords: [-122.3566, 47.6348] },
+      { name: "Capitol Hill", coords: [-122.3222, 47.6253] },
+      { name: "U-District", coords: [-122.3132, 47.6615] },
+      { name: "Central District", coords: [-122.3027, 47.6088] }
+    ];
+
+    // Create projection centered on Seattle
+    const projection = d3.geoMercator()
+      .center([-122.3321, 47.6062])
+      .scale(100000)
       .translate([width / 2, height / 2]);
 
     const path = d3.geoPath().projection(projection);
 
-    // Load US map data
-    d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
-      .then((us: any) => {
-        if (!us) return;
+    // Draw Seattle boundary
+    svg.append("path")
+      .datum(seattleBoundary)
+      .attr("d", path)
+      .attr("fill", "none")
+      .attr("stroke", "#4F46E5")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.6);
 
-        const states = feature(us, us.objects.states);
-        
-        // Draw states
-        svg.append("g")
-          .selectAll("path")
-          .data(states.features)
-          .join("path")
-          .attr("fill", d => {
-            // Only highlight Washington state
-            const stateName = d.properties?.name;
-            return stateName === 'Washington' ? '#4F46E5' : '#e5e7eb';
-          })
-          .attr("d", path)
-          .attr("stroke", "#fff")
-          .attr("stroke-width", 0.5)
-          .attr("opacity", d => {
-            const stateName = d.properties?.name;
-            return stateName === 'Washington' ? 0.8 : 0.3;
-          })
-          .on("mouseover", (event, d: any) => {
-            const stateName = d.properties?.name;
-            if (stateName === 'Washington') {
-              d3.select(event.currentTarget)
-                .attr("opacity", 1)
-                .attr("stroke-width", 1.5);
-              
-              tooltip
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px")
-                .html(`
-                  <div class="font-semibold">Washington State</div>
-                  <div class="text-xs">Click for details</div>
-                `)
-                .classed("hidden", false);
-            }
-          })
-          .on("mouseout", (event, d: any) => {
-            const stateName = d.properties?.name;
-            if (stateName === 'Washington') {
-              d3.select(event.currentTarget)
-                .attr("opacity", 0.8)
-                .attr("stroke-width", 0.5);
-              
-              tooltip.classed("hidden", true);
-            }
-          })
-          .on("click", (event, d: any) => {
-            const stateName = d.properties?.name;
-            if (stateName === 'Washington') {
-              setSelectedState('WA');
-            }
-          });
+    // Add neighborhood circles
+    const circles = svg.selectAll("circle")
+      .data(neighborhoods)
+      .enter()
+      .append("circle")
+      .attr("cx", d => projection(d.coords)![0])
+      .attr("cy", d => projection(d.coords)![1])
+      .attr("r", 10)
+      .attr("fill", "#10B981")
+      .attr("stroke", "white")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.8)
+      .on("mouseover", (event, d) => {
+        d3.select(event.currentTarget)
+          .attr("opacity", 1)
+          .attr("r", 12);
 
-        // Add major cities in Washington
-        const cities = [
-          { name: "Seattle", coordinates: [-122.3321, 47.6062] },
-          { name: "Spokane", coordinates: [-117.4260, 47.6588] },
-          { name: "Tacoma", coordinates: [-122.4400, 47.2529] },
-          { name: "Vancouver", coordinates: [-122.6615, 45.6387] },
-          { name: "Bellevue", coordinates: [-122.2006, 47.6101] }
-        ];
-
-        // Add city markers
-        svg.selectAll("circle")
-          .data(cities)
-          .join("circle")
-          .attr("transform", d => `translate(${projection(d.coordinates)})`)
-          .attr("r", 4)
-          .attr("fill", "#ef4444")
-          .attr("stroke", "#fff")
-          .attr("stroke-width", 1);
-
-        // Add city labels
-        svg.selectAll("text")
-          .data(cities)
-          .join("text")
-          .attr("transform", d => `translate(${projection(d.coordinates)})`)
-          .attr("dx", "8")
-          .attr("dy", "4")
-          .attr("font-size", "12px")
-          .attr("fill", "#1f2937")
-          .text(d => d.name);
+        tooltip
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px")
+          .html(d.name)
+          .classed("hidden", false);
       })
-      .catch(error => {
-        console.error('Error loading map data:', error);
+      .on("mouseout", (event) => {
+        d3.select(event.currentTarget)
+          .attr("opacity", 0.8)
+          .attr("r", 10);
+
+        tooltip.classed("hidden", true);
+      })
+      .on("click", (event, d) => {
+        setSelectedNeighborhood(d.name.toLowerCase().replace(" ", "_"));
       });
+
+    // Add neighborhood labels
+    svg.selectAll("text")
+      .data(neighborhoods)
+      .enter()
+      .append("text")
+      .attr("x", d => projection(d.coords)![0])
+      .attr("y", d => projection(d.coords)![1] + 25)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "12px")
+      .attr("fill", "#1f2937")
+      .text(d => d.name);
 
     return () => {
       tooltip.remove();
     };
-  }, [selectedState]);
+  }, []);
 
-  const metrics = selectedState === 'WA' ? washingtonMetrics : usMetrics;
-  const stats = {
-    gini: metrics.find(m => m.id === 'gini')?.currentValue.toFixed(2),
-    poverty: metrics.find(m => m.id === 'poverty-rate')?.currentValue.toFixed(1),
-    wealth: metrics.find(m => m.id === 'wealth-top1')?.currentValue.toFixed(1)
-  };
+  const selectedData = selectedNeighborhood 
+    ? seattleNeighborhoods.find(n => n.id === selectedNeighborhood)
+    : seattleNeighborhoods[0];
 
   return (
     <main className="container mx-auto px-4 py-6">
@@ -150,25 +138,51 @@ const HomePage: React.FC = () => {
         <div className="lg:col-span-9">
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <h2 className="text-2xl font-bold mb-4">
-              Washington State Inequality Overview
+              Seattle Neighborhoods Demographics
             </h2>
+            
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-indigo-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-indigo-800">Gini Coefficient</h3>
-                <p className="text-2xl font-bold text-indigo-600">{stats.gini}</p>
+                <h3 className="text-sm font-semibold text-indigo-800">Total Population</h3>
+                <p className="text-2xl font-bold text-indigo-600">
+                  {(selectedData.demographics.children_under_18 + 
+                    selectedData.demographics.working_age_adults_18_64 + 
+                    selectedData.demographics.older_adults_65_over).toLocaleString()}
+                </p>
               </div>
               <div className="bg-emerald-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-emerald-800">Poverty Rate</h3>
-                <p className="text-2xl font-bold text-emerald-600">{stats.poverty}%</p>
+                <h3 className="text-sm font-semibold text-emerald-800">Children Under 18</h3>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {selectedData.demographics.children_under_18.toLocaleString()}
+                </p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-amber-800">Top 1% Wealth Share</h3>
-                <p className="text-2xl font-bold text-amber-600">{stats.wealth}%</p>
+                <h3 className="text-sm font-semibold text-amber-800">Median Age</h3>
+                <p className="text-2xl font-bold text-amber-600">
+                  {selectedData.demographics.median_age_total}
+                </p>
               </div>
             </div>
+
             <div className="w-full h-[500px] bg-gray-50 rounded-lg overflow-hidden">
               <svg ref={mapRef} className="w-full h-full" />
             </div>
+
+            {selectedData && (
+              <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-800 mb-2">{selectedData.name} Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><strong>Working Age Adults:</strong> {selectedData.demographics.working_age_adults_18_64.toLocaleString()}</p>
+                    <p><strong>Older Adults (65+):</strong> {selectedData.demographics.older_adults_65_over.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p><strong>Median Age (Male):</strong> {selectedData.demographics.median_age_male}</p>
+                    <p><strong>Median Age (Female):</strong> {selectedData.demographics.median_age_female}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
