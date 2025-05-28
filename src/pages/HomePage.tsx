@@ -8,8 +8,8 @@ const washingtonCoordinates = {
   type: "Feature",
   properties: { name: "Washington" },
   geometry: {
-    type: "MultiPolygon",
-    coordinates: [[[[
+    type: "Polygon",
+    coordinates: [[[
       [-124.7844079, 48.3995],
       [-123.1697, 48.4045],
       [-122.7457, 48.0995],
@@ -20,7 +20,7 @@ const washingtonCoordinates = {
       [-123.1158, 46.1846],
       [-124.0432, 46.2846],
       [-124.7844079, 48.3995]
-    ]]]]
+    ]]]
   }
 };
 
