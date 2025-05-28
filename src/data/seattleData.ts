@@ -17,5 +17,20 @@ export const seattleNeighborhoods: SeattleNeighborhood[] = [
       median_age_female: 47.3
     }
   },
-  // Add all neighborhoods from the CSV here
+  {
+    id: 'north_delridge',
+    name: 'North Delridge',
+    type: 'CRA',
+    demographics: {
+      children_under_18: 530,
+      working_age_adults_18_64: 4689,
+      older_adults_65_over: 584,
+      aggregate_age_total: 225236.6,
+      aggregate_age_male: 112036.2,
+      aggregate_age_female: 111015.1,
+      median_age_total: 38.8,
+      median_age_male: 39.1,
+      median_age_female: 37.7
+    }
+  }
 ];
