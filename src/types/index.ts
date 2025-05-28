@@ -21,3 +21,32 @@ export interface Message {
   content: string;
   timestamp: Date;
 }
+
+export interface FilterState {
+  region: 'us' | 'washington' | 'comparison';
+  timeframe: 'current' | 'historical' | 'forecast';
+  metrics: string[];
+  yearRange: [number, number];
+}
+
+export interface TimeSeriesData {
+  year: number;
+  value: number;
+}
+
+export interface InequalityMetric {
+  id: string;
+  name: string;
+  description: string;
+  currentValue: number;
+  historicalValues: TimeSeriesData[];
+  forecastValues: TimeSeriesData[];
+  unit: string;
+  domain: [number, number];
+}
+
+export interface RegionData {
+  id: string;
+  name: string;
+  metrics: InequalityMetric[];
+}
