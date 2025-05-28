@@ -3,25 +3,29 @@ import { InequalityMetric, TimeSeriesData, RegionData } from '../types';
 
 export async function fetchRegions(): Promise<RegionData[]> {
   try {
+    console.log('Fetching regions from Supabase...');
     const { data: regions, error } = await supabase
       .from('regions')
       .select('*');
 
     if (error) throw error;
 
+    console.log('Fetching metrics from Supabase...');
     const { data: metrics, error: metricsError } = await supabase
       .from('metrics')
       .select('*');
 
     if (metricsError) throw metricsError;
 
+    console.log('Fetching metric values from Supabase...');
     const { data: values, error: valuesError } = await supabase
       .from('metric_values')
       .select('*');
 
     if (valuesError) throw valuesError;
 
-    return regions.map(region => ({
+    console.log('Processing data...');
+    const processedData = regions.map(region => ({
       id: region.id,
       name: region.name,
       metrics: metrics.map(metric => {
@@ -56,6 +60,9 @@ export async function fetchRegions(): Promise<RegionData[]> {
         };
       })
     }));
+
+    console.log('Data processed successfully');
+    return processedData;
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;

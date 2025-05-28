@@ -8,6 +8,7 @@ let washingtonMetrics: InequalityMetric[] = [];
 // Load data
 export const loadData = async () => {
   try {
+    console.log('Loading data from Supabase...');
     regions = await fetchRegions();
     const usRegion = regions.find(r => r.id === 'us');
     const waRegion = regions.find(r => r.id === 'washington');
@@ -15,6 +16,7 @@ export const loadData = async () => {
     if (usRegion) usMetrics = usRegion.metrics;
     if (waRegion) washingtonMetrics = waRegion.metrics;
     
+    console.log('Data loaded successfully:', { regions, usMetrics, washingtonMetrics });
     return { regions, usMetrics, washingtonMetrics };
   } catch (error) {
     console.error('Error loading data:', error);
