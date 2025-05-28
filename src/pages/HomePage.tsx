@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { feature } from 'topojson-client';
 import ChatInterface from '../components/ChatInterface';
-import { seattleNeighborhoods } from '../data/seattleData';
-import { SeattleNeighborhood } from '../types';
+import { usMetrics, washingtonMetrics } from '../data/inequalityData';
 
 const HomePage: React.FC = () => {
   const mapRef = useRef<SVGSVGElement>(null);
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<SeattleNeighborhood | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<'US' | 'WA'>('WA');
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -27,83 +27,98 @@ const HomePage: React.FC = () => {
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
       .style("pointer-events", "none");
 
-    // Create a projection centered on Seattle
-    const projection = d3.geoMercator()
-      .center([-122.3321, 47.6062])
-      .scale(150000)
+    // Create a projection centered on Washington state
+    const projection = d3.geoAlbers()
+      .center([-120.7401, 47.7511])
+      .scale(4000)
       .translate([width / 2, height / 2]);
 
-    // Define neighborhood coordinates
-    const neighborhoods = [
-      { name: "Capitol Hill", coords: [-122.3215, 47.6253] },
-      { name: "Ballard", coords: [-122.3842, 47.6792] },
-      { name: "Queen Anne", coords: [-122.3566, 47.6324] },
-      { name: "Fremont", coords: [-122.3499, 47.6615] },
-      { name: "U-District", coords: [-122.3132, 47.6615] },
-      { name: "Central District", coords: [-122.3071, 47.6088] }
-    ];
+    const path = d3.geoPath().projection(projection);
 
-    // Draw circles for each neighborhood
-    svg.selectAll("circle")
-      .data(neighborhoods)
-      .join("circle")
-      .attr("cx", d => projection(d.coords)[0])
-      .attr("cy", d => projection(d.coords)[1])
-      .attr("r", 30)
-      .attr("fill", d => {
-        const neighborhood = seattleNeighborhoods.find(n => n.name === d.name);
-        return neighborhood?.id === selectedNeighborhood?.id ? "#10B981" : "#4F46E5";
-      })
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 2)
-      .attr("opacity", 0.8)
-      .on("mouseover", (event, d) => {
-        d3.select(event.currentTarget)
-          .attr("opacity", 1)
-          .attr("r", 35);
+    // Load US map data
+    Promise.all([
+      d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
+    ]).then(([us]) => {
+      if (!us) return;
 
-        tooltip
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 28) + "px")
-          .html(`
-            <div class="font-semibold">${d.name}</div>
-            <div class="text-xs">Click for details</div>
-          `)
-          .classed("hidden", false);
-      })
-      .on("mouseout", (event) => {
-        d3.select(event.currentTarget)
-          .attr("opacity", 0.8)
-          .attr("r", 30);
+      const states = feature(us, us.objects.states);
+      
+      // Draw states
+      svg.append("g")
+        .selectAll("path")
+        .data(states.features)
+        .join("path")
+        .attr("fill", d => {
+          // Only highlight Washington state
+          const stateName = d.properties?.name;
+          return stateName === 'Washington' ? '#4F46E5' : '#e5e7eb';
+        })
+        .attr("d", path)
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 0.5)
+        .attr("opacity", d => {
+          const stateName = d.properties?.name;
+          return stateName === 'Washington' ? 0.8 : 0.3;
+        })
+        .on("mouseover", (event, d) => {
+          const stateName = d.properties?.name;
+          if (stateName === 'Washington') {
+            d3.select(event.currentTarget)
+              .attr("opacity", 1)
+              .attr("stroke-width", 1.5);
+            
+            tooltip
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px")
+              .html(`
+                <div class="font-semibold">Washington State</div>
+                <div class="text-xs">Click for details</div>
+              `)
+              .classed("hidden", false);
+          }
+        })
+        .on("mouseout", (event, d) => {
+          const stateName = d.properties?.name;
+          if (stateName === 'Washington') {
+            d3.select(event.currentTarget)
+              .attr("opacity", 0.8)
+              .attr("stroke-width", 0.5);
+            
+            tooltip.classed("hidden", true);
+          }
+        })
+        .on("click", (event, d) => {
+          const stateName = d.properties?.name;
+          if (stateName === 'Washington') {
+            setSelectedRegion('WA');
+          }
+        });
 
-        tooltip.classed("hidden", true);
-      })
-      .on("click", (event, d) => {
-        const neighborhood = seattleNeighborhoods.find(n => n.name === d.name);
-        if (neighborhood) {
-          setSelectedNeighborhood(neighborhood);
-        }
-      });
-
-    // Add neighborhood labels
-    svg.selectAll("text")
-      .data(neighborhoods)
-      .join("text")
-      .attr("x", d => projection(d.coords)[0])
-      .attr("y", d => projection(d.coords)[1] - 40)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "14px")
-      .attr("fill", "#1F2937")
-      .attr("stroke", "#fff")
-      .attr("stroke-width", "3")
-      .attr("stroke-linejoin", "round")
-      .attr("paint-order", "stroke")
-      .text(d => d.name);
+      // Add state labels
+      svg.append("g")
+        .selectAll("text")
+        .data(states.features)
+        .join("text")
+        .filter(d => d.properties?.name === 'Washington')
+        .attr("transform", d => `translate(${path.centroid(d)})`)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "14px")
+        .attr("fill", "#fff")
+        .attr("font-weight", "bold")
+        .text(d => d.properties?.name);
+    });
 
     return () => {
       tooltip.remove();
     };
-  }, [selectedNeighborhood]);
+  }, [selectedRegion]);
+
+  const metrics = selectedRegion === 'WA' ? washingtonMetrics : usMetrics;
+  const stats = {
+    gini: metrics.find(m => m.id === 'gini')?.currentValue.toFixed(2),
+    poverty: metrics.find(m => m.id === 'poverty-rate')?.currentValue.toFixed(1),
+    wealth: metrics.find(m => m.id === 'wealth-top1')?.currentValue.toFixed(1)
+  };
 
   return (
     <main className="container mx-auto px-4 py-6">
@@ -115,59 +130,25 @@ const HomePage: React.FC = () => {
         <div className="lg:col-span-9">
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <h2 className="text-2xl font-bold mb-4">
-              Seattle Neighborhoods Demographics
+              Washington State Inequality Overview
             </h2>
-            
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-indigo-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-indigo-800">Total Population</h3>
-                <p className="text-2xl font-bold text-indigo-600">
-                  {seattleNeighborhoods.reduce((sum, n) => 
-                    sum + n.demographics.children_under_18 + 
-                    n.demographics.working_age_adults_18_64 + 
-                    n.demographics.older_adults_65_over, 0
-                  ).toLocaleString()}
-                </p>
+                <h3 className="text-sm font-semibold text-indigo-800">Gini Coefficient</h3>
+                <p className="text-2xl font-bold text-indigo-600">{stats.gini}</p>
               </div>
               <div className="bg-emerald-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-emerald-800">Total Children</h3>
-                <p className="text-2xl font-bold text-emerald-600">
-                  {seattleNeighborhoods.reduce((sum, n) => 
-                    sum + n.demographics.children_under_18, 0
-                  ).toLocaleString()}
-                </p>
+                <h3 className="text-sm font-semibold text-emerald-800">Poverty Rate</h3>
+                <p className="text-2xl font-bold text-emerald-600">{stats.poverty}%</p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold text-amber-800">Average Median Age</h3>
-                <p className="text-2xl font-bold text-amber-600">
-                  {(seattleNeighborhoods.reduce((sum, n) => 
-                    sum + n.demographics.median_age_total, 0
-                  ) / seattleNeighborhoods.length).toFixed(1)}
-                </p>
+                <h3 className="text-sm font-semibold text-amber-800">Top 1% Wealth Share</h3>
+                <p className="text-2xl font-bold text-amber-600">{stats.wealth}%</p>
               </div>
             </div>
-
             <div className="w-full h-[500px] bg-gray-50 rounded-lg overflow-hidden">
               <svg ref={mapRef} className="w-full h-full" />
             </div>
-
-            {selectedNeighborhood && (
-              <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">{selectedNeighborhood.name} Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p><strong>Children:</strong> {selectedNeighborhood.demographics.children_under_18.toLocaleString()}</p>
-                    <p><strong>Working Age:</strong> {selectedNeighborhood.demographics.working_age_adults_18_64.toLocaleString()}</p>
-                    <p><strong>Seniors:</strong> {selectedNeighborhood.demographics.older_adults_65_over.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p><strong>Median Age:</strong> {selectedNeighborhood.demographics.median_age_total}</p>
-                    <p><strong>Median Age (Male):</strong> {selectedNeighborhood.demographics.median_age_male}</p>
-                    <p><strong>Median Age (Female):</strong> {selectedNeighborhood.demographics.median_age_female}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
