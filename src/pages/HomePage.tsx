@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChatInterface from '../components/ChatInterface';
+import SeattleMap from '../components/SeattleMap';
 import { seattleNeighborhoods } from '../data/seattleData';
 import { SeattleNeighborhood } from '../types';
 
@@ -48,25 +49,28 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {seattleNeighborhoods.map(neighborhood => (
-                <div 
-                  key={neighborhood.id}
-                  className="bg-gray-50 p-4 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => setSelectedNeighborhood(neighborhood)}
-                >
-                  <h3 className="font-semibold text-gray-800 mb-2">{neighborhood.name}</h3>
-                  <div className="text-sm text-gray-600">
-                    <p>Population: {(
-                      neighborhood.demographics.children_under_18 +
-                      neighborhood.demographics.working_age_adults_18_64 +
-                      neighborhood.demographics.older_adults_65_over
-                    ).toLocaleString()}</p>
-                    <p>Median Age: {neighborhood.demographics.median_age_total}</p>
+            <SeattleMap 
+              neighborhoods={seattleNeighborhoods}
+              onNeighborhoodSelect={setSelectedNeighborhood}
+            />
+
+            {selectedNeighborhood && (
+              <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-800 mb-2">{selectedNeighborhood.name} Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><strong>Children:</strong> {selectedNeighborhood.demographics.children_under_18.toLocaleString()}</p>
+                    <p><strong>Working Age:</strong> {selectedNeighborhood.demographics.working_age_adults_18_64.toLocaleString()}</p>
+                    <p><strong>Seniors:</strong> {selectedNeighborhood.demographics.older_adults_65_over.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p><strong>Median Age:</strong> {selectedNeighborhood.demographics.median_age_total}</p>
+                    <p><strong>Median Age (Male):</strong> {selectedNeighborhood.demographics.median_age_male}</p>
+                    <p><strong>Median Age (Female):</strong> {selectedNeighborhood.demographics.median_age_female}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

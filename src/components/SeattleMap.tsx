@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { SeattleNeighborhood } from '../services/seattleService';
+import { SeattleNeighborhood } from '../types';
 
 interface SeattleMapProps {
   neighborhoods: SeattleNeighborhood[];
