@@ -35,22 +35,16 @@ const HomePage: React.FC = () => {
 
     const path = d3.geoPath().projection(projection);
 
-    // Draw background
-    svg.append("rect")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("fill", "#B8D5F0"); // Light blue for water
-
     // Draw Seattle neighborhoods
     svg.selectAll("path")
       .data(seattleGeoJSON.features)
       .enter()
       .append("path")
       .attr("d", path)
-      .attr("fill", d => d.properties.id === selectedNeighborhood ? "#10B981" : "#E5E7EB")
-      .attr("stroke", "#4B5563")
+      .attr("fill", d => d.properties.id === selectedNeighborhood ? "#10B981" : "#4F46E5")
+      .attr("stroke", "#fff")
       .attr("stroke-width", 1)
-      .attr("opacity", 0.9)
+      .attr("opacity", 0.8)
       .on("mouseover", (event, d) => {
         d3.select(event.currentTarget)
           .attr("opacity", 1)
@@ -64,7 +58,7 @@ const HomePage: React.FC = () => {
       })
       .on("mouseout", (event) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 0.9)
+          .attr("opacity", 0.8)
           .attr("stroke-width", 1);
 
         tooltip.classed("hidden", true);
@@ -84,27 +78,9 @@ const HomePage: React.FC = () => {
       })
       .attr("text-anchor", "middle")
       .attr("font-size", "12px")
-      .attr("fill", "#1F2937")
+      .attr("fill", "#fff")
       .attr("font-weight", "500")
       .text(d => d.properties.name);
-
-    // Add major highways
-    const highways = [
-      { id: "I-5", coordinates: [[-122.3321, 47.5500], [-122.3321, 47.6500]] },
-      { id: "I-90", coordinates: [[-122.4000, 47.6062], [-122.2800, 47.6062]] }
-    ];
-
-    highways.forEach(highway => {
-      svg.append("path")
-        .datum({
-          type: "LineString",
-          coordinates: highway.coordinates
-        })
-        .attr("d", path)
-        .attr("stroke", "#DC2626")
-        .attr("stroke-width", 3)
-        .attr("fill", "none");
-    });
 
     return () => {
       tooltip.remove();
@@ -153,7 +129,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full h-[500px] bg-gray-50 rounded-lg overflow-hidden">
+            <div className="w-full h-[500px] bg-gray-800 rounded-lg overflow-hidden">
               <svg ref={mapRef} className="w-full h-full" />
             </div>
 
