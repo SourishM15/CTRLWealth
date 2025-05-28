@@ -32,5 +32,21 @@ export const seattleNeighborhoods: SeattleNeighborhood[] = [
       median_age_male: 39.1,
       median_age_female: 37.7
     }
+  },
+  {
+    id: 'high_point',
+    name: 'High Point',
+    type: 'CRA',
+    demographics: {
+      children_under_18: 2366,
+      working_age_adults_18_64: 6122,
+      older_adults_65_over: 744,
+      aggregate_age_total: 316446.6,
+      aggregate_age_male: 154075.6,
+      aggregate_age_female: 162133.9,
+      median_age_total: 34.2,
+      median_age_male: 34.4,
+      median_age_female: 34.0
+    }
   }
 ];
