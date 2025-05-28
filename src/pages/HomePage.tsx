@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { feature } from 'topojson-client';
 import ChatInterface from '../components/ChatInterface';
 import { seattleNeighborhoods } from '../data/seattleData';
 import { SeattleNeighborhood } from '../types';
@@ -21,87 +20,116 @@ const HomePage: React.FC = () => {
     const svg = d3.select(mapRef.current)
       .attr("viewBox", [0, 0, width, height])
       .attr("width", "100%")
-      .attr("height", "100%")
-      .style("background", "#f3f4f6");
+      .attr("height", "100%");
+
+    // Create projection for Seattle
+    const projection = d3.geoMercator()
+      .center([-122.3321, 47.6062]) // Seattle coordinates
+      .scale(80000)
+      .translate([width / 2, height / 2]);
+
+    const path = d3.geoPath().projection(projection);
 
     // Create tooltip
     const tooltip = d3.select("body").append("div")
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
       .style("pointer-events", "none");
 
-    // For now, create placeholder rectangles for neighborhoods
-    const gridSize = Math.ceil(Math.sqrt(seattleNeighborhoods.length));
-    const rectWidth = (width - 100) / gridSize;
-    const rectHeight = (height - 100) / gridSize;
-    const startX = 50; // Add padding
-    const startY = 50; // Add padding
+    // Create the GeoJSON data for Seattle
+    const seattleGeoJSON = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { name: "Seattle" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              [-122.4173, 47.7511], // Northwest corner
+              [-122.2449, 47.7511], // Northeast corner
+              [-122.2449, 47.4959], // Southeast corner
+              [-122.4173, 47.4959], // Southwest corner
+              [-122.4173, 47.7511]  // Close the polygon
+            ]]
+          }
+        }
+      ]
+    };
 
-    // Create a group for the neighborhoods
-    const neighborhoodsGroup = svg.append("g")
-      .attr("transform", `translate(${startX},${startY})`);
-
-    // Add neighborhoods
-    neighborhoodsGroup.selectAll("rect")
-      .data(seattleNeighborhoods)
-      .join("rect")
-      .attr("x", (d, i) => (i % gridSize) * rectWidth)
-      .attr("y", (d, i) => Math.floor(i / gridSize) * rectHeight)
-      .attr("width", rectWidth - 10)
-      .attr("height", rectHeight - 10)
-      .attr("fill", d => d.id === selectedNeighborhood?.id ? "#10B981" : "#4F46E5")
-      .attr("opacity", 0.8)
-      .attr("rx", 8)
+    // Draw base Seattle shape
+    svg.append("path")
+      .datum(seattleGeoJSON.features[0])
+      .attr("d", path as any)
+      .attr("fill", "#4F46E5")
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
-      .on("mouseover", (event, d) => {
-        d3.select(event.currentTarget)
-          .attr("opacity", 1)
-          .attr("stroke-width", 3);
-        
-        tooltip
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 28) + "px")
-          .html(d.name)
-          .classed("hidden", false);
-      })
-      .on("mouseout", (event) => {
-        d3.select(event.currentTarget)
-          .attr("opacity", 0.8)
-          .attr("stroke-width", 2);
-        
-        tooltip.classed("hidden", true);
-      })
-      .on("click", (event, d) => {
-        setSelectedNeighborhood(d);
-      });
+      .attr("opacity", 0.2);
 
-    // Add neighborhood labels
-    neighborhoodsGroup.selectAll("text")
-      .data(seattleNeighborhoods)
-      .join("text")
-      .attr("x", (d, i) => (i % gridSize) * rectWidth + rectWidth / 2)
-      .attr("y", (d, i) => Math.floor(i / gridSize) * rectHeight + rectHeight / 2)
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", "14px")
-      .attr("fill", "white")
-      .attr("font-weight", "bold")
-      .text(d => d.name);
+    // Add neighborhood markers
+    seattleNeighborhoods.forEach(neighborhood => {
+      // Calculate positions for neighborhoods (simplified for now)
+      const coords = getNeighborhoodCoords(neighborhood.id);
+      const [x, y] = projection([coords.lng, coords.lat]) || [0, 0];
 
-    // Add title
-    svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", 25)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "20px")
-      .attr("font-weight", "bold")
-      .attr("fill", "#1F2937")
-      .text("Seattle Neighborhoods");
+      const group = svg.append("g")
+        .attr("transform", `translate(${x},${y})`);
+
+      // Add circle marker
+      group.append("circle")
+        .attr("r", 15)
+        .attr("fill", neighborhood.id === selectedNeighborhood?.id ? "#10B981" : "#4F46E5")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 2)
+        .attr("opacity", 0.8)
+        .on("mouseover", (event) => {
+          d3.select(event.currentTarget)
+            .attr("opacity", 1)
+            .attr("r", 18);
+
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px")
+            .html(neighborhood.name)
+            .classed("hidden", false);
+        })
+        .on("mouseout", (event) => {
+          d3.select(event.currentTarget)
+            .attr("opacity", 0.8)
+            .attr("r", 15);
+
+          tooltip.classed("hidden", true);
+        })
+        .on("click", () => {
+          setSelectedNeighborhood(neighborhood);
+        });
+
+      // Add label
+      group.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", 25)
+        .attr("fill", "#1F2937")
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold")
+        .text(neighborhood.name);
+    });
 
     return () => {
       tooltip.remove();
     };
   }, [selectedNeighborhood]);
+
+  // Helper function to get neighborhood coordinates
+  const getNeighborhoodCoords = (id: string): { lat: number; lng: number } => {
+    const coords: { [key: string]: { lat: number; lng: number } } = {
+      capitol_hill: { lat: 47.625, lng: -122.322 },
+      ballard: { lat: 47.675, lng: -122.385 },
+      queen_anne: { lat: 47.637, lng: -122.357 },
+      fremont: { lat: 47.651, lng: -122.350 },
+      u_district: { lat: 47.661, lng: -122.313 },
+      central_district: { lat: 47.609, lng: -122.302 }
+    };
+    return coords[id] || { lat: 47.6062, lng: -122.3321 }; // Default to Seattle center
+  };
 
   return (
     <main className="container mx-auto px-4 py-6">
