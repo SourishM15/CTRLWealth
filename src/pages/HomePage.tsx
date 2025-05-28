@@ -22,44 +22,17 @@ const HomePage: React.FC = () => {
       .attr("width", "100%")
       .attr("height", "100%");
 
-    // Create projection for Seattle
-    const projection = d3.geoMercator()
-      .center([-122.3321, 47.6062]) // Seattle coordinates
-      .scale(80000)
-      .translate([width / 2, height / 2]);
-
-    const path = d3.geoPath().projection(projection);
-
     // Create tooltip
     const tooltip = d3.select("body").append("div")
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
       .style("pointer-events", "none");
 
-    // Create the GeoJSON data for Seattle
-    const seattleGeoJSON = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { name: "Seattle" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [[
-              [-122.4173, 47.7511], // Northwest corner
-              [-122.2449, 47.7511], // Northeast corner
-              [-122.2449, 47.4959], // Southeast corner
-              [-122.4173, 47.4959], // Southwest corner
-              [-122.4173, 47.7511]  // Close the polygon
-            ]]
-          }
-        }
-      ]
-    };
+    // Seattle map path data
+    const seattlePath = "M 400 100 L 500 100 L 500 300 L 450 400 L 400 450 L 350 500 L 300 450 L 250 400 L 300 300 L 300 200 L 350 150 L 400 100 Z";
 
-    // Draw base Seattle shape
+    // Draw Seattle outline
     svg.append("path")
-      .datum(seattleGeoJSON.features[0])
-      .attr("d", path as any)
+      .attr("d", seattlePath)
       .attr("fill", "#4F46E5")
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
@@ -67,12 +40,10 @@ const HomePage: React.FC = () => {
 
     // Add neighborhood markers
     seattleNeighborhoods.forEach(neighborhood => {
-      // Calculate positions for neighborhoods (simplified for now)
       const coords = getNeighborhoodCoords(neighborhood.id);
-      const [x, y] = projection([coords.lng, coords.lat]) || [0, 0];
-
+      
       const group = svg.append("g")
-        .attr("transform", `translate(${x},${y})`);
+        .attr("transform", `translate(${coords.x},${coords.y})`);
 
       // Add circle marker
       group.append("circle")
@@ -119,16 +90,16 @@ const HomePage: React.FC = () => {
   }, [selectedNeighborhood]);
 
   // Helper function to get neighborhood coordinates
-  const getNeighborhoodCoords = (id: string): { lat: number; lng: number } => {
-    const coords: { [key: string]: { lat: number; lng: number } } = {
-      capitol_hill: { lat: 47.625, lng: -122.322 },
-      ballard: { lat: 47.675, lng: -122.385 },
-      queen_anne: { lat: 47.637, lng: -122.357 },
-      fremont: { lat: 47.651, lng: -122.350 },
-      u_district: { lat: 47.661, lng: -122.313 },
-      central_district: { lat: 47.609, lng: -122.302 }
+  const getNeighborhoodCoords = (id: string): { x: number; y: number } => {
+    const coords: { [key: string]: { x: number; y: number } } = {
+      capitol_hill: { x: 400, y: 300 },
+      ballard: { x: 300, y: 200 },
+      queen_anne: { x: 350, y: 250 },
+      fremont: { x: 350, y: 180 },
+      u_district: { x: 450, y: 200 },
+      central_district: { x: 450, y: 300 }
     };
-    return coords[id] || { lat: 47.6062, lng: -122.3321 }; // Default to Seattle center
+    return coords[id] || { x: 400, y: 300 }; // Default to center
   };
 
   return (
