@@ -22,6 +22,13 @@ const HomePage: React.FC = () => {
       .attr("width", "100%")
       .attr("height", "100%");
 
+    // Add background map image
+    svg.append("image")
+      .attr("href", "/Seattle Map.png")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("preserveAspectRatio", "xMidYMid slice");
+
     // Create tooltip
     const tooltip = d3.select("body").append("div")
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
@@ -44,10 +51,10 @@ const HomePage: React.FC = () => {
       .attr("fill", d => d.properties.id === selectedNeighborhood ? "#10B981" : "#4F46E5")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1)
-      .attr("opacity", 0.8)
+      .attr("opacity", 0.4)
       .on("mouseover", (event, d) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 1)
+          .attr("opacity", 0.7)
           .attr("stroke-width", 2);
 
         tooltip
@@ -58,7 +65,7 @@ const HomePage: React.FC = () => {
       })
       .on("mouseout", (event) => {
         d3.select(event.currentTarget)
-          .attr("opacity", 0.8)
+          .attr("opacity", 0.4)
           .attr("stroke-width", 1);
 
         tooltip.classed("hidden", true);
@@ -80,6 +87,8 @@ const HomePage: React.FC = () => {
       .attr("font-size", "12px")
       .attr("fill", "#fff")
       .attr("font-weight", "500")
+      .attr("stroke", "#000")
+      .attr("stroke-width", "0.5px")
       .text(d => d.properties.name);
 
     return () => {
@@ -129,7 +138,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full h-[500px] bg-gray-800 rounded-lg overflow-hidden">
+            <div className="w-full h-[500px] rounded-lg overflow-hidden relative">
               <svg ref={mapRef} className="w-full h-full" />
             </div>
 
