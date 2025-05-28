@@ -27,8 +27,14 @@ const HomePage: React.FC = () => {
       .attr("class", "absolute hidden bg-black text-white p-2 rounded text-sm")
       .style("pointer-events", "none");
 
-    // Seattle map path data
-    const seattlePath = "M 400 100 L 500 100 L 500 300 L 450 400 L 400 450 L 350 500 L 300 450 L 250 400 L 300 300 L 300 200 L 350 150 L 400 100 Z";
+    // Seattle map path data (more accurate representation)
+    const seattlePath = "M400,100 L450,120 L470,150 L480,200 L475,250 L460,300 L440,350 L420,400 L400,450 L380,480 L350,500 L320,480 L300,450 L280,400 L270,350 L280,300 L300,250 L320,200 L350,150 L380,120 L400,100 Z";
+
+    // Create a projection centered on Seattle
+    const projection = d3.geoMercator()
+      .center([-122.3321, 47.6062]) // Seattle coordinates
+      .scale(80000)
+      .translate([width / 2, height / 2]);
 
     // Draw Seattle outline
     svg.append("path")
@@ -38,12 +44,16 @@ const HomePage: React.FC = () => {
       .attr("stroke-width", 2)
       .attr("opacity", 0.2);
 
-    // Add neighborhood markers
-    seattleNeighborhoods.forEach(neighborhood => {
-      const coords = getNeighborhoodCoords(neighborhood.id);
-      
+    // Add neighborhood markers with improved positioning
+    seattleNeighborhoods.forEach((neighborhood, index) => {
+      // Calculate positions in a grid-like layout
+      const row = Math.floor(index / 3);
+      const col = index % 3;
+      const x = 300 + col * 100;
+      const y = 200 + row * 100;
+
       const group = svg.append("g")
-        .attr("transform", `translate(${coords.x},${coords.y})`);
+        .attr("transform", `translate(${x},${y})`);
 
       // Add circle marker
       group.append("circle")
@@ -60,7 +70,10 @@ const HomePage: React.FC = () => {
           tooltip
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 28) + "px")
-            .html(neighborhood.name)
+            .html(`
+              <div class="font-semibold">${neighborhood.name}</div>
+              <div class="text-xs">Click for details</div>
+            `)
             .classed("hidden", false);
         })
         .on("mouseout", (event) => {
@@ -77,10 +90,10 @@ const HomePage: React.FC = () => {
       // Add label
       group.append("text")
         .attr("text-anchor", "middle")
-        .attr("dy", 25)
+        .attr("dy", "2em")
         .attr("fill", "#1F2937")
-        .attr("font-size", "10px")
-        .attr("font-weight", "bold")
+        .attr("font-size", "12px")
+        .attr("font-weight", "500")
         .text(neighborhood.name);
     });
 
@@ -88,19 +101,6 @@ const HomePage: React.FC = () => {
       tooltip.remove();
     };
   }, [selectedNeighborhood]);
-
-  // Helper function to get neighborhood coordinates
-  const getNeighborhoodCoords = (id: string): { x: number; y: number } => {
-    const coords: { [key: string]: { x: number; y: number } } = {
-      capitol_hill: { x: 400, y: 300 },
-      ballard: { x: 300, y: 200 },
-      queen_anne: { x: 350, y: 250 },
-      fremont: { x: 350, y: 180 },
-      u_district: { x: 450, y: 200 },
-      central_district: { x: 450, y: 300 }
-    };
-    return coords[id] || { x: 400, y: 300 }; // Default to center
-  };
 
   return (
     <main className="container mx-auto px-4 py-6">
